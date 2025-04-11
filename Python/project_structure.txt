@@ -1,0 +1,24 @@
+Student Management & Attendance System
+│
+├── main.py                  # Entry point for the application
+├── database/
+│   ├── __init__.py
+│   ├── db_handler.py        # Database connection and operations
+│   └── schema.py            # Database schema definition
+│
+├── models/
+│   ├── __init__.py
+│   ├── student.py           # Student model
+│   └── attendance.py        # Attendance model
+│
+├── services/
+│   ├── __init__.py
+│   ├── student_service.py   # Student management operations
+│   ├── attendance_service.py # Attendance management operations
+│   └── report_service.py    # Report generation
+│
+├── ui/
+│   ├── __init__.py
+│   └── cli.py               # Command-line interface
+│
+└── config.py                # Configuration settings 
