@@ -385,11 +385,27 @@ public class CLI {
         System.out.println("\n--- Student Attendance Report ---");
         System.out.print("Enter student ID: "); int id = Integer.parseInt(scanner.nextLine().trim());
         Map<String,Object> rep = reportService.generateStudentAttendanceReport(id);
-        System.out.println(rep);
-        System.out.print("Export to PDF? (y/n): "); if (scanner.nextLine().trim().equalsIgnoreCase("y")) {
-            System.out.print("Filename: "); String fn = scanner.nextLine().trim();
-            String path = reportService.exportReportToPDF(rep, fn);
-            System.out.println("Exported: " + path);
+        // Pretty-print
+        Map<String,Object> studentMap = (Map<String,Object>) rep.get("student");
+        Map<String,Object> summaryMap = (Map<String,Object>) rep.get("attendance_summary");
+        List<Map<String,Object>> records = (List<Map<String,Object>>) rep.get("attendance_records");
+        String generatedAt = (String) rep.get("generated_at");
+        String name = (String) studentMap.get("name");
+        String course = (String) studentMap.get("course");
+        System.out.printf("Attendance Report for %s (ID: %d)%n", name, id);
+        System.out.printf("Course: %s%n", course);
+        System.out.printf("Generated: %s%n", generatedAt);
+        System.out.println("--------------------------------------------------");
+        System.out.println("\nSummary:");
+        System.out.printf("Total days: %d%n", ((Number) summaryMap.get("total_days")).intValue());
+        System.out.printf("Present: %d%n", ((Number) summaryMap.get("present_days")).intValue());
+        System.out.printf("Absent: %d%n", ((Number) summaryMap.get("absent_days")).intValue());
+        System.out.printf("Attendance percentage: %.2f%%%n", ((Number) summaryMap.get("attendance_percentage")).doubleValue());
+        System.out.println("\nAttendance Records:");
+        System.out.printf("%-12s %-10s%n", "Date", "Status");
+        System.out.println("----------------------");
+        for (Map<String,Object> rec : records) {
+            System.out.printf("%-12s %-10s%n", rec.get("date"), rec.get("status"));
         }
         pause();
     }
@@ -398,7 +414,27 @@ public class CLI {
         System.out.println("\n--- Daily Attendance Report ---");
         System.out.print("Enter date (YYYY-MM-DD): "); String date = scanner.nextLine().trim();
         Map<String,Object> rep = reportService.generateDailyAttendanceReport(date);
-        System.out.println(rep);
+        List<Map<String,Object>> entries = (List<Map<String,Object>>) rep.get("entries");
+        int present = ((Number) rep.get("present_count")).intValue();
+        int absent = ((Number) rep.get("absent_count")).intValue();
+        int notRecorded = ((Number) rep.get("not_recorded")).intValue();
+        int total = ((Number) rep.get("total_students")).intValue();
+        double perc = ((Number) rep.get("attendance_percentage")).doubleValue();
+        System.out.printf("Daily Attendance Report for %s%n", date);
+        System.out.printf("Generated: %s%n", rep.get("generated_at"));
+        System.out.println("--------------------------------------------------");
+        System.out.println("\nSummary:");
+        System.out.printf("Total students: %d%n", total);
+        System.out.printf("Present: %d%n", present);
+        System.out.printf("Absent: %d%n", absent);
+        System.out.printf("Not recorded: %d%n", notRecorded);
+        System.out.printf("Attendance percentage: %.2f%%%n", perc);
+        System.out.println("\nAttendance Details:");
+        System.out.printf("%-5s %-30s %-10s%n", "ID", "Name", "Status");
+        System.out.println("--------------------------------------------------");
+        for (Map<String,Object> e : entries) {
+            System.out.printf("%-5s %-30s %-10s%n", e.get("student_id"), e.get("name"), e.get("status"));
+        }
         pause();
     }
 
@@ -406,7 +442,25 @@ public class CLI {
         System.out.println("\n--- Course Attendance Report ---");
         System.out.print("Enter course: "); String course = scanner.nextLine().trim();
         Map<String,Object> rep = reportService.generateCourseAttendanceReport(course);
-        System.out.println(rep);
+        List<Map<String,Object>> srList = (List<Map<String,Object>>) rep.get("student_reports");
+        int count = ((Number) rep.get("student_count")).intValue();
+        double perc = ((Number) rep.get("overall_attendance_percentage")).doubleValue();
+        System.out.printf("Course Attendance Report for %s%n", course);
+        System.out.printf("Generated: %s%n", rep.get("generated_at"));
+        System.out.println("--------------------------------------------------");
+        System.out.println("\nSummary:");
+        System.out.printf("Number of students: %d%n", count);
+        System.out.printf("Overall attendance: %.2f%%%n", perc);
+        System.out.println("\nStudent Details:");
+        System.out.printf("%-5s %-30s %-10s %-10s %-10s%n", "ID", "Name", "Present", "Absent", "%");
+        System.out.println("--------------------------------------------------");
+        for (Map<String,Object> sr : srList) {
+            Map<String,Object> stud = (Map<String,Object>) sr.get("student");
+            Map<String,Object> sm = (Map<String,Object>) sr.get("attendance_summary");
+            System.out.printf("%-5s %-30s %-10s %-10s %-10s%n",
+                stud.get("student_id"), stud.get("name"),
+                sm.get("present_days"), sm.get("absent_days"), sm.get("attendance_percentage") + "%");
+        }
         pause();
     }
 
@@ -415,7 +469,26 @@ public class CLI {
         System.out.print("Enter year: "); int year = Integer.parseInt(scanner.nextLine().trim());
         System.out.print("Enter month (1-12): "); int month = Integer.parseInt(scanner.nextLine().trim());
         Map<String,Object> rep = reportService.generateMonthlyAttendanceReport(year, month);
-        System.out.println(rep);
+        Map<String,Map<String,Object>> days = (Map<String,Map<String,Object>>) rep.get("days");
+        int totalStudents = ((Number) rep.get("total_students")).intValue();
+        int totalRecords = ((Number) rep.get("total_records")).intValue();
+        double overallPerc = ((Number) rep.get("overall_attendance_percentage")).doubleValue();
+        String monthName = (String) rep.get("month_name");
+        System.out.printf("Monthly Attendance Report for %s %d%n", monthName, year);
+        System.out.printf("Generated: %s%n", rep.get("generated_at"));
+        System.out.println("--------------------------------------------------");
+        System.out.println("\nSummary:");
+        System.out.printf("Total students: %d%n", totalStudents);
+        System.out.printf("Total attendance records: %d%n", totalRecords);
+        System.out.printf("Overall attendance: %.2f%%%n", overallPerc);
+        System.out.println("\nDaily Breakdown:");
+        System.out.printf("%-12s %-10s %-10s %-10s %-10s%n", "Date", "Present", "Absent", "Total", "%");
+        System.out.println("--------------------------------------------------");
+        for (Map.Entry<String,Map<String,Object>> entry : days.entrySet()) {
+            Map<String,Object> d = entry.getValue();
+            System.out.printf("%-12s %-10s %-10s %-10s %-10s%n",
+                entry.getKey(), d.get("present"), d.get("absent"), d.get("total"), d.get("present_percentage") + "%");
+        }
         pause();
     }
 

@@ -2,6 +2,7 @@ package com.studentmanagement.database;
 
 import java.sql.*;
 import java.util.*;
+import java.lang.Runtime;
 
 public class DatabaseHandler {
     private static final String DB_URL = "jdbc:sqlite:student_management.db";
@@ -44,6 +45,8 @@ public class DatabaseHandler {
     }
 
     public List<Map<String, Object>> executeQuery(String sql, Object... params) throws SQLException {
+        long startTime = System.nanoTime();
+        long startMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         List<Map<String, Object>> rows = new ArrayList<>();
         try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             setParameters(pstmt, params);
@@ -59,20 +62,31 @@ public class DatabaseHandler {
                 }
             }
         }
+        long endTime = System.nanoTime();
+        long endMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        System.out.printf("[PROFILE] executeQuery: time=%.3fs, memDelta=%.2fKB%n", (endTime - startTime)/1e9, (endMem - startMem)/1024.0);
         return rows;
     }
 
     public int executeUpdate(String sql, Object... params) throws SQLException {
+        long startTime = System.nanoTime();
+        long startMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             setParameters(pstmt, params);
             int affected = pstmt.executeUpdate();
             if (sql.trim().toUpperCase().startsWith("INSERT")) {
                 try (ResultSet keys = pstmt.getGeneratedKeys()) {
                     if (keys.next()) {
+                        long endTime = System.nanoTime();
+                        long endMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+                        System.out.printf("[PROFILE] executeUpdate (insert): time=%.3fs, memDelta=%.2fKB%n", (endTime - startTime)/1e9, (endMem - startMem)/1024.0);
                         return keys.getInt(1);
                     }
                 }
             }
+            long endTime = System.nanoTime();
+            long endMem = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+            System.out.printf("[PROFILE] executeUpdate: time=%.3fs, memDelta=%.2fKB%n", (endTime - startTime)/1e9, (endMem - startMem)/1024.0);
             return affected;
         }
     }
