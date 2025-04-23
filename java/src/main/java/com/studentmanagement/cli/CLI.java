@@ -10,9 +10,7 @@ import java.util.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-// Profile support
-@FunctionalInterface
-interface Action { void run() throws Exception; }
+
 
 public class CLI {
     private final StudentService studentService;
@@ -80,14 +78,14 @@ public class CLI {
             String choice = scanner.nextLine().trim();
             if (choice.equals("9")) return;
             switch (choice) {
-                case "1" -> profile("addStudent", this::addStudent);
-                case "2" -> profile("viewStudent", this::viewStudent);
-                case "3" -> profile("listStudents", this::listStudents);
-                case "4" -> profile("updateStudent", this::updateStudent);
-                case "5" -> profile("deleteStudent", this::deleteStudent);
-                case "6" -> profile("searchStudents", this::searchStudents);
-                case "7" -> profile("advancedSearch", this::advancedSearch);
-                case "8" -> profile("bulkOperations", this::bulkOperations);
+                case "1" -> addStudent();
+                case "2" -> viewStudent();
+                case "3" -> listStudents();
+                case "4" -> updateStudent();
+                case "5" -> deleteStudent();
+                case "6" -> searchStudents();
+                case "7" -> advancedSearch();
+                case "8" -> bulkOperations();
                 default -> System.out.println("Invalid choice. Please try again.");
             }
         }
@@ -104,9 +102,9 @@ public class CLI {
             String choice = scanner.nextLine().trim();
             if (choice.equals("9")) return;
             switch (choice) {
-                case "1" -> profile("recordAttendance", this::recordAttendance);
-                case "2" -> profile("recordAttendanceBatch", this::recordAttendanceBatch);
-                case "3" -> profile("viewAttendance", this::viewAttendance);
+                case "1" -> recordAttendance();
+                case "2" -> recordAttendanceBatch();
+                case "3" -> viewAttendance();
                 default -> System.out.println("Invalid choice. Please try again.");
             }
         }
@@ -125,11 +123,11 @@ public class CLI {
             String choice = scanner.nextLine().trim();
             if (choice.equals("9")) return;
             switch (choice) {
-                case "1" -> profile("studentAttendanceReport", this::studentAttendanceReport);
-                case "2" -> profile("dailyAttendanceReport", this::dailyAttendanceReport);
-                case "3" -> profile("courseAttendanceReport", this::courseAttendanceReport);
-                case "4" -> profile("monthlyAttendanceReport", this::monthlyAttendanceReport);
-                case "5" -> profile("exportReport", this::exportReport);
+                case "1" -> studentAttendanceReport();
+                case "2" -> dailyAttendanceReport();
+                case "3" -> courseAttendanceReport();
+                case "4" -> monthlyAttendanceReport();
+                case "5" -> exportReport();
                 default -> System.out.println("Invalid choice. Please try again.");
             }
         }
@@ -556,18 +554,5 @@ public class CLI {
         scanner.nextLine();
     }
 
-    // Profile support
-    private void profile(String name, Action action) {
-        long start = System.nanoTime();
-        Runtime rt = Runtime.getRuntime();
-        long beforeMem = rt.totalMemory() - rt.freeMemory();
-        try {
-            action.run();
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
-        }
-        long afterMem = rt.totalMemory() - rt.freeMemory();
-        double elapsed = (System.nanoTime() - start) / 1e9;
-        System.out.printf("[PROFILE] %s: runtime=%.3fs; memDelta=%.2fKB\n", name, elapsed, (afterMem - beforeMem)/1024.0);
-    }
+    
 } 
