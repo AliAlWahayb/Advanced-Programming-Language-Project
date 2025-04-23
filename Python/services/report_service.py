@@ -6,6 +6,9 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 import calendar
 import json
+import time
+import tracemalloc
+import functools
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -19,9 +22,24 @@ from services.attendance_service import AttendanceService
 from models.student import Student
 
 
+def profile(func):
+    """Decorator to measure time and memory usage of service methods"""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start_mem, _ = tracemalloc.get_traced_memory()
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        end_mem, peak = tracemalloc.get_traced_memory()
+        print(f"[PROFILE] {func.__name__}: runtime {(end_time - start_time):.4f}s; mem {(end_mem - start_mem)/1024:.2f}KiB; peak {peak/1024:.2f}KiB")
+        return result
+    return wrapper
+
+
 class ReportService:
     """makes reports"""
 
+    @profile
     def __init__(
         self,
         db_handler: DatabaseHandler,
@@ -33,6 +51,7 @@ class ReportService:
         self.attendance_service = attendance_service or AttendanceService(
             db_handler)
 
+    @profile
     def generate_student_attendance_report(self, student_id: int) -> Dict[str, Any]:
         student = self.student_service.get_student_by_id(student_id)
         if not student:
@@ -50,6 +69,7 @@ class ReportService:
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
 
+    @profile
     def generate_daily_attendance_report(self, date_str: str) -> Dict[str, Any]:
         attendance_records = self.attendance_service.get_attendance_by_date(
             date_str)
@@ -86,6 +106,7 @@ class ReportService:
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
 
+    @profile
     def generate_course_attendance_report(self, course: str) -> Dict[str, Any]:
         query = "SELECT * FROM students WHERE course = ? ORDER BY name;"
         students = [Student.from_db_dict(row)
@@ -116,9 +137,11 @@ class ReportService:
             'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
 
+    @profile
     def generate_monthly_attendance_report(self, year: int, month: int) -> Dict[str, Any]:
         return self.attendance_service.get_monthly_attendance_report(year, month)
 
+    @profile
     def export_report_to_csv(self, report_data: Dict[str, Any], filename: str) -> str:
         if not filename.endswith('.csv'):
             filename += '.csv'
@@ -175,6 +198,7 @@ class ReportService:
 
         return os.path.abspath(filename)
 
+    @profile
     def export_report_to_json(self, report_data: Dict[str, Any], filename: str) -> str:
         if not filename.endswith('.json'):
             filename += '.json'
@@ -184,6 +208,7 @@ class ReportService:
 
         return os.path.abspath(filename)
 
+    @profile
     def export_report_to_pdf(self, report_data: Dict[str, Any], filename: str) -> str:
         if not filename.endswith('.pdf'):
             filename += '.pdf'

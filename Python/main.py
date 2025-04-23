@@ -3,6 +3,9 @@
 import os
 import sys
 from ui.cli import CLI
+import time
+import tracemalloc
+tracemalloc.start()
 
 
 def main():

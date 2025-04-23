@@ -107,6 +107,7 @@ The system includes several optimizations:
 - Database indexing for faster queries
 - Efficient batch operations for attendance recording
 - Memory-efficient data processing for reports
+- To get meaningful memory readings, make sure you have `tracemalloc.start()` invoked early (e.g. in `main.py`)
 
 ## Future Enhancements
 

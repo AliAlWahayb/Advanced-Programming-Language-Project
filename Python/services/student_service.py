@@ -1,18 +1,37 @@
 """handles database stuff for students"""
 
 from typing import List, Optional, Dict, Any, Tuple
+import time
+import tracemalloc
+import functools
 
 from database.db_handler import DatabaseHandler
 from models.student import Student
 
 
+def profile(func):
+    """Decorator to measure time and memory usage of service methods"""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start_mem, _ = tracemalloc.get_traced_memory()
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        end_mem, peak = tracemalloc.get_traced_memory()
+        print(f"[PROFILE] {func.__name__}: runtime {(end_time - start_time):.4f}s; mem {(end_mem - start_mem)/1024:.2f}KiB; peak {peak/1024:.2f}KiB")
+        return result
+    return wrapper
+
+
 class StudentService:
     """does database operations for students"""
 
+    @profile
     def __init__(self, db_handler: DatabaseHandler):
         """setup with database connection"""
         self.db_handler = db_handler
 
+    @profile
     def add_student(self, student: Student) -> Student:
         """add new student to database"""
         # check course format
@@ -36,6 +55,7 @@ class StudentService:
 
         return self.get_student_by_id(student_id)
 
+    @profile
     def get_student_by_id(self, student_id: int) -> Optional[Student]:
         """get one student by ID"""
         query = "SELECT * FROM students WHERE student_id = ?;"
@@ -46,6 +66,7 @@ class StudentService:
 
         return Student.from_db_dict(result[0])
 
+    @profile
     def get_all_students(self) -> List[Student]:
         """get all students"""
         query = "SELECT * FROM students ORDER BY student_id;"
@@ -53,6 +74,7 @@ class StudentService:
 
         return [Student.from_db_dict(row) for row in results]
 
+    @profile
     def update_student(self, student: Student) -> Optional[Student]:
         """update student info"""
         if student.student_id is None:
@@ -81,6 +103,7 @@ class StudentService:
 
         return self.get_student_by_id(student.student_id)
 
+    @profile
     def update_students_course(self, student_ids: List[int], new_course: str) -> int:
         """update course for multiple students"""
         # check course format
@@ -101,6 +124,7 @@ class StudentService:
 
         return self.db_handler.execute_write_query(query, params)
 
+    @profile
     def delete_student(self, student_id: int) -> bool:
         """delete a student"""
         query = "DELETE FROM students WHERE student_id = ?;"
@@ -109,6 +133,7 @@ class StudentService:
 
         return affected_rows > 0
 
+    @profile
     def delete_students(self, student_ids: List[int]) -> int:
         """delete multiple students"""
         id_placeholder = ','.join('?' for _ in student_ids)
@@ -120,6 +145,7 @@ class StudentService:
 
         return self.db_handler.execute_write_query(query, tuple(student_ids))
 
+    @profile
     def search_students(self, search_term: str) -> List[Student]:
         """search by name or course"""
         query = """
@@ -134,6 +160,7 @@ class StudentService:
 
         return [Student.from_db_dict(row) for row in results]
 
+    @profile
     def advanced_search(self, criteria: Dict[str, Any]) -> List[Student]:
         """search with filters"""
         params = []
@@ -174,6 +201,7 @@ class StudentService:
 
         return [Student.from_db_dict(row) for row in results]
 
+    @profile
     def is_duplicate_name(self, name: str, exclude_id: Optional[int] = None) -> bool:
         """check if name already exists"""
         if exclude_id:

@@ -3,18 +3,37 @@
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, date
 import calendar
+import time
+import tracemalloc
+import functools
 
 from database.db_handler import DatabaseHandler
 from models.attendance import Attendance, AttendanceStatus
 from config import DATE_FORMAT
 
 
+def profile(func):
+    """Decorator to measure time and memory usage of service methods"""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start_mem, _ = tracemalloc.get_traced_memory()
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        end_time = time.perf_counter()
+        end_mem, peak = tracemalloc.get_traced_memory()
+        print(f"[PROFILE] {func.__name__}: runtime {(end_time - start_time):.4f}s; mem {(end_mem - start_mem)/1024:.2f}KiB; peak {peak/1024:.2f}KiB")
+        return result
+    return wrapper
+
+
 class AttendanceService:
     """attendance operations"""
 
+    @profile
     def __init__(self, db_handler: DatabaseHandler):
         self.db_handler = db_handler
 
+    @profile
     def record_attendance(self, attendance: Attendance) -> Attendance:
         query = """
         INSERT INTO attendance (student_id, date, status)
@@ -30,6 +49,7 @@ class AttendanceService:
 
         return self.get_attendance_by_id(attendance_id) or attendance
 
+    @profile
     def get_attendance_by_id(self, attendance_id: int) -> Optional[Attendance]:
         query = "SELECT * FROM attendance WHERE attendance_id = ?;"
         result = self.db_handler.execute_query(query, (attendance_id,))
@@ -39,6 +59,7 @@ class AttendanceService:
 
         return Attendance.from_db_dict(result[0])
 
+    @profile
     def get_student_attendance(self, student_id: int) -> List[Attendance]:
         query = """
         SELECT * FROM attendance
@@ -49,6 +70,7 @@ class AttendanceService:
 
         return [Attendance.from_db_dict(row) for row in results]
 
+    @profile
     def get_attendance_by_date(self, date_str: str) -> List[Attendance]:
         query = """
         SELECT * FROM attendance
@@ -59,6 +81,7 @@ class AttendanceService:
 
         return [Attendance.from_db_dict(row) for row in results]
 
+    @profile
     def get_attendance_by_date_range(self, start_date: str, end_date: str) -> List[Attendance]:
         query = """
         SELECT * FROM attendance
@@ -69,6 +92,7 @@ class AttendanceService:
 
         return [Attendance.from_db_dict(row) for row in results]
 
+    @profile
     def delete_attendance(self, attendance_id: int) -> bool:
         query = "DELETE FROM attendance WHERE attendance_id = ?;"
         affected_rows = self.db_handler.execute_write_query(
@@ -76,6 +100,7 @@ class AttendanceService:
 
         return affected_rows > 0
 
+    @profile
     def get_student_attendance_summary(self, student_id: int) -> Dict[str, Any]:
         query = """
         SELECT
@@ -102,6 +127,7 @@ class AttendanceService:
             'attendance_percentage': round(attendance_percentage, 2)
         }
 
+    @profile
     def get_monthly_attendance_report(self, year: int, month: int) -> Dict[str, Any]:
         _, num_days = calendar.monthrange(year, month)
         start_date = f"{year}-{month:02d}-01"
